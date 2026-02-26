@@ -1,0 +1,15 @@
+{
+  "mode": "mesh-discovery",
+  "target": "sentinels",
+  "description": "Discovers and indexes all sentinel chambers in the ritual/chambers directory.",
+  "actions": [
+    "scan_chambers_directory",
+    "filter_sentinel_chambers",
+    "build_sentinel_index"
+  ],
+  "discovery": {
+    "chambers_path": "ritual/chambers",
+    "sentinel_pattern": "sentinel-*",
+    "index_output": "ritual/index/sentinels.json"
+  }
+}
