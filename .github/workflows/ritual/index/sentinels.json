@@ -1,0 +1,13 @@
+{
+  "index": "sentinels",
+  "description": "Symbolic index of all sentinel chambers in the mesh.",
+  "sentinels": [
+    {
+      "id": "sentinel-244",
+      "chamber_ref": "ritual/chambers/sentinel-244.json",
+      "ip": "192.168.1.244",
+      "scope": "lan-only",
+      "role": "service-node"
+    }
+  ]
+}
