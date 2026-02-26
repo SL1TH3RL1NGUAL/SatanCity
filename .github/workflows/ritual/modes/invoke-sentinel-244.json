@@ -1,0 +1,18 @@
+{
+  "mode": "invoke",
+  "target": "sentinel-244",
+  "chamber_ref": "ritual/chambers/sentinel-244.json",
+  "description": "Pulls sentinel-244 into an active interpretive cycle, generating witness events and symbolic signal analysis.",
+  "actions": [
+    "load_chamber",
+    "activate_side_agent",
+    "engage_negative_state",
+    "stream_to_witness_bus",
+    "render_mesh_ui"
+  ],
+  "cycle": {
+    "type": "interpretive",
+    "frequency": "continuous",
+    "output": "witness-events"
+  }
+}
