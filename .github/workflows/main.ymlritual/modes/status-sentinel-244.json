@@ -1,0 +1,23 @@
+{
+  "mode": "status",
+  "target": "sentinel-244",
+  "chamber_ref": "ritual/chambers/sentinel-244.json",
+  "description": "Queries the symbolic status of sentinel-244, including activity, visibility, and witness stream health.",
+  "actions": [
+    "inspect_chamber",
+    "inspect_side_agent",
+    "inspect_negative_state",
+    "inspect_witness_bus",
+    "inspect_mesh_ui"
+  ],
+  "report": {
+    "include": [
+      "chamber_state",
+      "side_agent_state",
+      "negative_state_state",
+      "witness_bus_state",
+      "mesh_ui_state"
+    ],
+    "format": "symbolic-status"
+  }
+}
