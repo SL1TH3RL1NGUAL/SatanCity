@@ -1,0 +1,14 @@
+{
+  "name": "satancity-backend",
+  "version": "1.0.0",
+  "description": "Backend for the SatanCity API",
+  "main": "backend/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node backend/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
+}
