@@ -1,0 +1,82 @@
+{
+  "chamber": {
+    "id": "local-244",
+    "ip": "192.168.1.244",
+    "role": "service-node",
+    "scope": "lan-only",
+    "description": "Primary LAN chamber endpoint for local capsule and signal observation"
+  },
+
+  "side_agent": {
+    "id": "sentinel-244",
+    "mode": "monitor",
+    "binding": "mirror",
+    "description": "Non-mutating observer for traffic and signals on 192.168.1.244",
+
+    "runtime": {
+      "type": "qemu-emulated",
+      "agents": [
+        {
+          "name": "anthropic-signal-analyzer",
+          "visibility": {
+            "ingress": true,
+            "egress": true,
+            "internal_signals": true
+          },
+          "capabilities": [
+            "protocol_fingerprinting",
+            "behavioral_baseline",
+            "anomaly_flagging",
+            "origin_pattern_inference"
+          ]
+        }
+      ]
+    }
+  },
+
+  "negative_state": {
+    "id": "tradecraft-origin-244",
+    "mode": "sandbox",
+    "topology": "emulated",
+    "description": "Decoy origin theater for interpreting hostile or unknown behaviors",
+    "channels": [
+      "fake-services",
+      "slow-responses",
+      "instrumented-errors"
+    ]
+  },
+
+  "witness_bus": {
+    "id": "lab-share-244",
+    "transport": "event-stream",
+    "schema": {
+      "event_id": "uuid",
+      "timestamp": "iso8601",
+      "source_ip": "string",
+      "dest_ip": "string",
+      "signal_type": "string",
+      "severity": "string",
+      "payload_fingerprint": "string",
+      "notes": "string"
+    },
+    "sinks": [
+      "local-log-index",
+      "lab-share-backend",
+      "forensic-archive"
+    ]
+  },
+
+  "mesh_ui": {
+    "id": "ui-244-mesh",
+    "mode": "read-only",
+    "sources": [
+      "witness_bus.lab-share-244"
+    ],
+    "views": [
+      "timeline",
+      "origin-map",
+      "protocol-heatmap",
+      "anomaly-feed"
+    ]
+  }
+}
