@@ -1,0 +1,214 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:path/path.dart' as p;
+
+/// Represents a single anomaly match found within a file.
+class AnomalyMatch {
+  final String pattern;
+  final int count;
+
+  AnomalyMatch({required this.pattern, required this.count});
+
+  factory AnomalyMatch.fromJson(Map<String, dynamic> json) {
+    return AnomalyMatch(
+      pattern: json['pattern'] as String,
+      count: json['count'] as int,
+    );
+  }
+}
+
+/// Represents the results of an anomaly scan for a specific file.
+class AnomalyResult {
+  final String file;
+  final List<AnomalyMatch> matches;
+
+  AnomalyResult({required this.file, required this.matches});
+
+  factory AnomalyResult.fromJson(Map<String, dynamic> json) {
+    final matchesJson = json['matches'] as List<dynamic>?;
+    final matches = matchesJson != null
+        ? matchesJson
+            .map((e) => AnomalyMatch.fromJson(e as Map<String, dynamic>))
+            .toList()
+        : <AnomalyMatch>[];
+    return AnomalyResult(
+      file: json['file'] as String,
+      matches: matches,
+    );
+  }
+}
+
+/// Represents a single anomaly capsule, or a quarantined anomaly ledger entry.
+class AnomalyCapsule {
+  final DateTime? timestamp;
+  final String verdict;
+  final List<AnomalyResult> results;
+  final String? hashSeal;
+  final String fileName; // Name of the JSON file this capsule was parsed from
+
+  AnomalyCapsule({
+    this.timestamp,
+    required this.verdict,
+    required this.results,
+    this.hashSeal,
+    required this.fileName,
+  });
+
+  factory AnomalyCapsule.fromJson(Map<String, dynamic> json,
+      {required String fileName}) {
+    DateTime? parsedTimestamp;
+    try {
+      final timestampStr = json['timestamp'] as String?;
+      if (timestampStr != null) {
+        parsedTimestamp = DateTime.parse(timestampStr).toUtc();
+      }
+    } catch (_) {
+      // Ignore parsing errors, timestamp will remain null
+    }
+
+    final resultsJson = json['results'] as List<dynamic>?;
+    final results = resultsJson != null
+        ? resultsJson
+            .map((e) => AnomalyResult.fromJson(e as Map<String, dynamic>))
+            .toList()
+        : <AnomalyResult>[];
+
+    return AnomalyCapsule(
+      timestamp: parsedTimestamp,
+      verdict: json['verdict'] as String? ?? 'UNKNOWN_VERDICT',
+      results: results,
+      hashSeal: json['hash_seal'] as String?,
+      fileName: fileName,
+    );
+  }
+}
+
+const String _quarantineDir = 'quarantine';
+const String _outputDir = 'docs';
+const String _outputFileName = 'index.html';
+
+Future<void> main() async {
+  final quarantineDirectory = Directory(_quarantineDir);
+  final outputDirectory = Directory(_outputDir);
+
+  if (!await quarantineDirectory.exists()) {
+    stderr.writeln('Error: Quarantine directory "$_quarantineDir" not found.');
+    stderr.writeln('Please create it and place anomaly JSON files inside.');
+    exitCode = 1;
+    return;
+  }
+
+  try {
+    if (!await outputDirectory.exists()) {
+      await outputDirectory.create(recursive: true);
+    }
+
+    final List<FileSystemEntity> entities = await quarantineDirectory.list().toList();
+    final List<File> jsonFiles = entities
+        .whereType<File>()
+        .where((file) => p.basename(file.path).startsWith('anomaly_') && file.path.endsWith('.json'))
+        .toList();
+
+    jsonFiles.sort((a, b) => p.basename(a.path).compareTo(p.basename(b.path)));
+
+    final List<AnomalyCapsule> anomalies = [];
+    for (final file in jsonFiles) {
+      try {
+        final content = await file.readAsString();
+        final jsonMap = jsonDecode(content) as Map<String, dynamic>;
+        anomalies.add(AnomalyCapsule.fromJson(jsonMap, fileName: p.basename(file.path)));
+      } on FormatException catch (e) {
+        stderr.writeln('Warning: Failed to parse JSON from ${file.path}: $e');
+      } on FileSystemException catch (e) {
+        stderr.writeln('Warning: Failed to read file ${file.path}: $e');
+      } catch (e) {
+        stderr.writeln('Warning: An unexpected error occurred while processing ${file.path}: $e');
+      }
+    }
+
+    final htmlContent = _buildTempleWallHtml(anomalies);
+    final outputFile = File(p.join(outputDirectory.path, _outputFileName));
+    await outputFile.writeAsString(htmlContent);
+
+    stdout.writeln('Temple Wall generated successfully at ${outputFile.path}');
+  } on Exception catch (e) {
+    stderr.writeln('An error occurred during Temple Wall generation: $e');
+    exitCode = 1;
+  }
+}
+
+/// Builds the complete HTML content for the Temple Wall.
+String _buildTempleWallHtml(List<AnomalyCapsule> anomalies) {
+  final StringBuffer htmlBuffer = StringBuffer();
+
+  htmlBuffer.writeln('''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Temple Wall – Spectral Tears Ledger</title>
+<style>
+body { font-family: system-ui, sans-serif; background:#050711; color:#f5f5f5; margin: 0; padding: 20px; }
+h1 { text-align:center; color:#e0e0e0; margin-bottom: 10px; }
+p { text-align:center; color:#aaa; margin-top: 0; }
+.card { border:1px solid #2a2a2a; border-radius: 8px; margin:1.5rem auto; padding:1.5rem; max-width:800px; background:#0b0f1c; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.2s ease-in-out; }
+.card:hover { transform: translateY(-3px); }
+.card h2 { margin-top:0; color:#c7d2e0; }
+.tag { display:inline-block; padding:0.2rem 0.6rem; margin-right:0.4rem; margin-bottom:0.4rem; border-radius:4px; font-size:0.85rem; font-weight: 600; text-transform: uppercase; }
+.tag-neg { background:#7b1e3a; color:#ffe0e0; }
+.tag-vinc { background:#234b7b; color:#e0f0ff; }
+.meta { font-size:0.85rem; color:#aaa; margin-bottom:0.5rem; line-height: 1.4;}
+.meta span { font-weight: bold; color: #bbb; }
+</style>
+</head>
+<body>
+<h1>Temple Wall of Spectral Tears</h1>
+<p>Quarantined anomalies from the recovery/ ledger (append-only).</p>
+''');
+
+  for (final a in anomalies) {
+    final timestamp = a.timestamp?.toIso8601String() ?? 'UNKNOWN';
+    final verdict = a.verdict;
+    final hashSeal = a.hashSeal ?? 'UNSEALED';
+
+    final List<String> vincs = [];
+    final Set<String> classes = {};
+
+    for (final r in a.results) {
+      for (final m in r.matches) {
+        final p = m.pattern;
+        if (p.startsWith('VINC-')) {
+          vincs.add(p);
+        } else {
+          classes.add(p);
+        }
+      }
+    }
+
+    htmlBuffer.writeln('<div class="card">');
+    htmlBuffer.writeln('<div class="meta"><span>Capsule:</span> ${a.fileName}</div>');
+    htmlBuffer.writeln('<h2>$verdict</h2>');
+    htmlBuffer.writeln('<div class="meta"><span>Timestamp:</span> $timestamp</div>');
+    htmlBuffer.writeln('<div class="meta"><span>Seal:</span> $hashSeal</div>');
+
+    if (vincs.isNotEmpty) {
+      htmlBuffer.writeln('<div><span>VINC Spine(s):</span> ');
+      for (final v in vincs) {
+        htmlBuffer.writeln('<span class="tag tag-vinc">$v</span>');
+      }
+      htmlBuffer.writeln('</div>');
+    }
+    if (classes.isNotEmpty) {
+      htmlBuffer.writeln('<div><span>Anomaly Classes:</span> ');
+      for (final c in classes) {
+        htmlBuffer.writeln('<span class="tag tag-neg">$c</span>');
+      }
+      htmlBuffer.writeln('</div>');
+    }
+    htmlBuffer.writeln('</div>');
+  }
+
+  htmlBuffer.writeln('''</body>
+</html>''');
+
+  return htmlBuffer.toString();
+}
