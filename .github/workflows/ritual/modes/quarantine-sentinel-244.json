@@ -1,0 +1,18 @@
+{
+  "mode": "quarantine",
+  "target": "sentinel-244",
+  "chamber_ref": "ritual/chambers/sentinel-244.json",
+  "description": "Moves sentinel-244 into a quarantined interpretive posture, isolating its observations from live systems.",
+  "actions": [
+    "isolate_chamber",
+    "restrict_side_agent",
+    "harden_negative_state",
+    "mirror_witness_bus_to_forensic_only",
+    "disable_live_mesh_ui"
+  ],
+  "constraints": {
+    "live_traffic_interaction": "none",
+    "output_scope": "forensic-only",
+    "ui_mode": "offline-review"
+  }
+}
