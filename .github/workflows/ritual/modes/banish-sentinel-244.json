@@ -1,0 +1,18 @@
+{
+  "mode": "banish",
+  "target": "sentinel-244",
+  "chamber_ref": "ritual/chambers/sentinel-244.json",
+  "description": "Deactivates and detaches the sentinel-244 side-agent, closing witness streams and sandbox channels.",
+  "actions": [
+    "close_mesh_ui",
+    "seal_witness_bus",
+    "suspend_negative_state",
+    "detach_side_agent",
+    "unload_chamber"
+  ],
+  "state": {
+    "active": false,
+    "visibility": "none",
+    "mutation": "none"
+  }
+}
